@@ -54,22 +54,25 @@ async function processData() {
       let count = 0;
       pipeline.on('data', ({ value }) => {
         count++;
-        if (count === 1) {
-          console.log("🔍 First item structure:", JSON.stringify(Object.keys(value)));
-          console.log("🔍 First item city value:", value.location?.city || "MISSING");
-        }
-        if (count % 500 === 0) console.log(`🔄 Processed ${count} items...`);
+        const lat = parseFloat(value.location?.coordinates?.latitude);
+        const lon = parseFloat(value.location?.coordinates?.longitude);
 
-        const rawCity = value.location?.city || 'unknown';
-        const city = rawCity.toLowerCase()
-          .trim()
-          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]/g, '-')
-          .replace(/-+/g, '-')
-          .replace(/^-|-$/g, '');
+        if (count === 1) {
+          console.log("🔍 First item coordinates:", lat, lon);
+        }
+        if (count % 1000 === 0) console.log(`🔄 Processed ${count} items...`);
+
+        if (isNaN(lat) || isNaN(lon)) return;
+
+        // Create 25-30km Grid tiles (0.25 degree resolution)
+        const gridSize = 0.25;
+        const gridLat = (Math.floor(lat / gridSize) * gridSize).toFixed(2);
+        const gridLon = (Math.floor(lon / gridSize) * gridSize).toFixed(2);
         
-        if (!cityData[city]) cityData[city] = [];
-        cityData[city].push(value);
+        const tileKey = `tile-${gridLat}-${gridLon}`;
+        
+        if (!cityData[tileKey]) cityData[tileKey] = [];
+        cityData[tileKey].push(value);
       });
 
       pipeline.on('end', () => {
@@ -83,11 +86,11 @@ async function processData() {
         });
 
         fs.writeFileSync(
-          path.join(OUTPUT_DIR, 'cities.json'),
+          path.join(OUTPUT_DIR, 'tiles.json'),
           JSON.stringify(cities.sort())
         );
 
-        console.log(`✨ Done! Processed ${cities.length} cities.`);
+        console.log(`✨ Done! Processed ${cities.length} coordinate tiles.`);
         resolve();
       });
 
