@@ -49,8 +49,16 @@ async function processData() {
         streamArray()
       ]);
 
+      let count = 0;
       pipeline.on('data', ({ value }) => {
-        const rawCity = value.city || 'unknown';
+        count++;
+        if (count === 1) {
+          console.log("🔍 First item structure:", JSON.stringify(Object.keys(value)));
+          console.log("🔍 First item city value:", value.city || value.City || "MISSING");
+        }
+        if (count % 500 === 0) console.log(`🔄 Processed ${count} items...`);
+
+        const rawCity = value.city || value.City || 'unknown';
         const city = rawCity.toLowerCase()
           .trim()
           .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
