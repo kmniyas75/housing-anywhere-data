@@ -64,10 +64,10 @@ async function processData() {
 
         if (isNaN(lat) || isNaN(lon)) return;
 
-        // Create 25-30km Grid tiles (0.25 degree resolution)
-        const gridSize = 0.25;
-        const gridLat = (Math.floor(lat / gridSize) * gridSize).toFixed(2);
-        const gridLon = (Math.floor(lon / gridSize) * gridSize).toFixed(2);
+        // Create ~11km Grid tiles (0.1 degree resolution) - The industry "best" balance
+        const gridSize = 0.1;
+        const gridLat = (Math.floor(lat / gridSize) * gridSize).toFixed(1);
+        const gridLon = (Math.floor(lon / gridSize) * gridSize).toFixed(1);
         
         const tileKey = `tile-${gridLat}-${gridLon}`;
         
