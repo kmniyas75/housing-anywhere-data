@@ -1,0 +1,13 @@
+{
+  "name": "housing-anywhere-data",
+  "version": "1.0.0",
+  "description": "Housing Anywhere data processor for GitHub Pages",
+  "main": "split.js",
+  "scripts": {
+    "start": "node split.js"
+  },
+  "dependencies": {
+    "stream-chain": "^2.2.5",
+    "stream-json": "^1.8.0"
+  }
+}
