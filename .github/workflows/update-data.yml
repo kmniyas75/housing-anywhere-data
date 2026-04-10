@@ -24,6 +24,9 @@ jobs:
       - name: Run Splitter
         run: node split.js
 
+      - name: Check files
+        run: ls -R docs
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:

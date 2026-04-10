@@ -42,56 +42,54 @@ async function processData() {
     await downloadFile(FILE_URL, TEMP_FILE);
     console.log("✅ Download complete.");
 
-    const pipeline = chain([
-      fs.createReadStream(TEMP_FILE),
-      parser(),
-      streamArray()
-    ]);
+    await new Promise((resolve, reject) => {
+      const pipeline = chain([
+        fs.createReadStream(TEMP_FILE),
+        parser(),
+        streamArray()
+      ]);
 
-    pipeline.on('data', ({ value }) => {
-      // Sanitize city name: lowercase, trim, replace spaces/special chars with hyphens
-      const rawCity = value.city || 'unknown';
-      const city = rawCity.toLowerCase()
-        .trim()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
-        .replace(/[^a-z0-9]/g, '-') // Replace non-alphanumeric with hyphens
-        .replace(/-+/g, '-') // Remove double hyphens
-        .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
-      
-      if (!cityData[city]) {
-        cityData[city] = [];
-      }
-      cityData[city].push(value);
-    });
-
-    pipeline.on('end', () => {
-      console.log("📦 Splitting into city files...");
-      
-      const cities = Object.keys(cityData);
-      cities.forEach(city => {
-        fs.writeFileSync(
-          path.join(OUTPUT_DIR, `${city}.json`),
-          JSON.stringify(cityData[city])
-        );
+      pipeline.on('data', ({ value }) => {
+        const rawCity = value.city || 'unknown';
+        const city = rawCity.toLowerCase()
+          .trim()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '');
+        
+        if (!cityData[city]) cityData[city] = [];
+        cityData[city].push(value);
       });
 
-      // Create a cities index for the frontend
-      fs.writeFileSync(
-        path.join(OUTPUT_DIR, 'cities.json'),
-        JSON.stringify(cities.sort())
-      );
+      pipeline.on('end', () => {
+        console.log("📦 Splitting into city files...");
+        const cities = Object.keys(cityData);
+        cities.forEach(city => {
+          fs.writeFileSync(
+            path.join(OUTPUT_DIR, `${city}.json`),
+            JSON.stringify(cityData[city])
+          );
+        });
 
-      console.log(`✨ Done! Processed ${cities.length} cities.`);
-      
-      // Clean up temp file
-      if (fs.existsSync(TEMP_FILE)) {
-        fs.unlinkSync(TEMP_FILE);
-      }
+        fs.writeFileSync(
+          path.join(OUTPUT_DIR, 'cities.json'),
+          JSON.stringify(cities.sort())
+        );
+
+        console.log(`✨ Done! Processed ${cities.length} cities.`);
+        resolve();
+      });
+
+      pipeline.on('error', (err) => {
+        console.error("❌ Pipeline error:", err);
+        reject(err);
+      });
     });
 
-    pipeline.on('error', (err) => {
-      console.error("❌ Pipeline error:", err);
-    });
+    if (fs.existsSync(TEMP_FILE)) {
+      fs.unlinkSync(TEMP_FILE);
+    }
 
   } catch (error) {
     console.error("❌ Error:", error);
