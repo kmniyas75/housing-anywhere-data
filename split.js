@@ -96,4 +96,11 @@ async function processData() {
   }
 }
 
-processData();
+(async () => {
+  try {
+    await processData();
+  } catch (err) {
+    console.error("❌ Fatal error:", err);
+    process.exit(1);
+  }
+})();
