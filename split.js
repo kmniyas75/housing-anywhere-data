@@ -3,6 +3,7 @@ const path = require('path');
 const https = require('https');
 const { chain } = require('stream-chain');
 const { parser } = require('stream-json');
+const { pick } = require('stream-json/filters/Pick');
 const { streamArray } = require('stream-json/streamers/StreamArray');
 
 const FILE_URL = "https://housinganywhere.com/feeds/Stayforall/Stayforall.json";
@@ -46,6 +47,7 @@ async function processData() {
       const pipeline = chain([
         fs.createReadStream(TEMP_FILE),
         parser(),
+        pick({ filter: 'listings' }),
         streamArray()
       ]);
 
@@ -54,11 +56,11 @@ async function processData() {
         count++;
         if (count === 1) {
           console.log("🔍 First item structure:", JSON.stringify(Object.keys(value)));
-          console.log("🔍 First item city value:", value.city || value.City || "MISSING");
+          console.log("🔍 First item city value:", value.location?.city || "MISSING");
         }
         if (count % 500 === 0) console.log(`🔄 Processed ${count} items...`);
 
-        const rawCity = value.city || value.City || 'unknown';
+        const rawCity = value.location?.city || 'unknown';
         const city = rawCity.toLowerCase()
           .trim()
           .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
